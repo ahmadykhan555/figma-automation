@@ -1,171 +1,123 @@
 # Figma-to-React Agent MVP
 
-A Vite + React + TypeScript + Tailwind gallery app, plus a Cursor agent workflow that turns a Figma node URL into a presentational React component. **Figma MCP is the only data source for this MVP** — no REST API, no personal access token, no fetch/axios client.
+Prove that Cursor + Figma MCP can generate a real presentational React component. The test is **one button and all of its variants** — not pages, not a classifier, not a gallery of many components.
 
-This is a **showcase of agentic conversion**, not a compiler. The agent uses MCP tools, then writes presentational React + Tailwind. A thin TypeScript layer only parses URLs and classifies page vs component from MCP metadata.
+**Figma MCP is the only data source** — no REST API, no personal access token, no fetch/axios client. This is a showcase of agentic conversion, not a compiler.
+
+Later (after this button looks right in the browser): cards, icons, then a full page split into child components.
 
 ## Todos
 
 - [x] Scaffold Vite + React + TS + Tailwind in figma-automation with a simple gallery page
-- [ ] Add URL parser + page-vs-component classifier (from MCP metadata)
-- [ ] Add Cursor rule + README for the MCP-only generate workflow and naming conventions
-- [ ] Empty gallery state plus one sample generated component slot
+- [x] Connect Figma MCP (official Figma plugin / `https://mcp.figma.com/mcp`) and complete OAuth
+- [ ] Add a thin Cursor rule for the MCP-only **component** generate workflow
+- [ ] Generate the demo button + variants from the Figma node below
+- [ ] Register it on the gallery and visually compare to the Figma screenshot in the browser
+
+## Test node
+
+[Button in E-commerce UI Kit (demo)](https://www.figma.com/design/J6j1qHUXhzrXbmudDxnzqn/E-commerce-UI---Figma-Ecommerce-UI-Kit--Demo-Version---Community-?node-id=2787-276)
+
+| | |
+| --- | --- |
+| fileKey | `J6j1qHUXhzrXbmudDxnzqn` |
+| nodeId | `2787:276` (URL `node-id=2787-276` → colon for MCP) |
+
+Treat this node as a **component** (likely a `COMPONENT_SET`). Do not invent variants, colors, type, or icons — pull them from MCP.
 
 ## What already exists
 
-- Workspace: `/Users/codingninja/Documents/Work/2026/learnings/figma/figma-automation` — git repo with GitHub remote, no app code yet.
-- **Figma MCP is not connected in this Cursor session.** Connecting it is a hard prerequisite. Add Figma’s remote MCP (`https://mcp.figma.com/mcp`) in Cursor Settings → MCP (or install the official Figma plugin) and complete OAuth. If MCP tools are missing at generate time, stop and ask to connect MCP — do not invent a REST fallback.
+- Workspace: `figma-automation` — Vite + React + TS + Tailwind v4 gallery (`App.tsx` empty state).
+- Figma MCP is connected in this Cursor session via the official plugin.
+- `src/lib/figma/` is a placeholder. URL parsing / page-vs-component classification is **not** part of this MVP.
 
-## Architecture
+## Architecture (this slice)
 
 ```mermaid
 flowchart LR
-  url["Figma node URL"] --> parse["parse fileKey + nodeId"]
-  parse --> meta["MCP get_metadata"]
-  meta --> classify{"page or component?"}
-  classify -->|page| children["Walk direct children"]
-  classify -->|component| single["Treat as one unit"]
-  children --> mcp["get_design_context + get_screenshot + download_assets"]
-  single --> mcp
+  url["Button node URL"] --> mcp["get_metadata then get_design_context + get_screenshot + download_assets"]
   mcp --> agent["Cursor agent"]
-  agent --> tsx["kebab-case.tsx PascalCase export"]
-  tsx --> gallery["Vite gallery preview"]
+  agent --> tsx["src/components/generated/button.tsx"]
+  tsx --> gallery["App.tsx variant matrix"]
 ```
-
-Two layers, so classification can later be reused for Vue:
-
-1. **Framework-agnostic core** (`src/lib/figma/`): parse a Figma URL; classify a node from MCP `get_metadata` (type, name, children).
-2. **React adapter + agent rules**: Cursor writes `src/components/generated/*.tsx` (and `pages/` wrappers when the node is a full page) and registers them on a gallery page.
 
 The Vite app never talks to Figma. All Figma access happens through Cursor’s MCP tools while the agent is generating.
 
+One file, one export, variant **props** (the design has a variant set — this is the point of the test). Gallery renders every combination so we can compare to Figma.
+
 ## MCP tools (the only Figma path)
 
-Remote MCP: `https://mcp.figma.com/mcp`. The agent extracts `fileKey` + `nodeId` from the pasted link (hyphen in `node-id=1-2` → `1:2` for tool calls).
+Remote MCP: `https://mcp.figma.com/mcp`. Extract `fileKey` + `nodeId` from the pasted link (hyphen in `node-id=2787-276` → `2787:276`).
 
 | Tool | When |
 | --- | --- |
-| [`get_metadata`](https://developers.figma.com/docs/figma-mcp-server/tools-and-prompts/) | **Always first.** Sparse outline: type, name, children. Classify page vs component; list children before generating. |
-| [`get_design_context`](https://developers.figma.com/docs/figma-mcp-server/tools-and-prompts/) | React + Tailwind intermediate representation for the target node (or each child in page mode). Not drop-in production code — translate into this repo’s conventions. |
-| [`get_screenshot`](https://developers.figma.com/docs/figma-mcp-server/tools-and-prompts/) | Visual reference so the agent can match layout. |
-| [`download_assets`](https://developers.figma.com/docs/figma-mcp-server/tools-and-prompts/) | SVG (or PNG) for icons/illustrations. Save under `src/assets/figma/` and import; do not invent placeholder icons. |
-| [`get_variable_defs`](https://developers.figma.com/docs/figma-mcp-server/tools-and-prompts/) | Optional; map Figma variables to Tailwind classes when present. |
+| [`get_metadata`](https://developers.figma.com/docs/figma-mcp-server/tools-and-prompts/) | First. Confirm type/name (component vs set) and list variant children. |
+| [`get_design_context`](https://developers.figma.com/docs/figma-mcp-server/tools-and-prompts/) | Primary: React + Tailwind reference for the node. Adapt to this repo; do not paste verbatim. |
+| [`get_screenshot`](https://developers.figma.com/docs/figma-mcp-server/tools-and-prompts/) | Visual reference for layout and every variant. |
+| [`download_assets`](https://developers.figma.com/docs/figma-mcp-server/tools-and-prompts/) | SVG for any icons. Save under `src/assets/figma/` and import; do not invent placeholder icons. |
+| [`get_variable_defs`](https://developers.figma.com/docs/figma-mcp-server/tools-and-prompts/) | Optional; map Figma variables to Tailwind when present. |
+| [`get_context_for_code_connect`](https://developers.figma.com/docs/figma-mcp-server/tools-and-prompts/) | Optional; exhaustive variant axes/options if metadata is not enough. |
 
-If MCP is unavailable or unauthenticated, the agent must stop. Do not call `api.figma.com`.
+If MCP is unavailable or unauthenticated, stop. Do not call `api.figma.com`.
 
-## Page vs component classification
-
-A `node-id` in a Figma URL can be a whole page or a single modular piece. Classify **before** generating code. Do not dump a full page into one mega-component.
-
-Always call `get_metadata` first. Then classify in this order — **explicit name wins, then Figma type, then children**:
-
-### 1. Designer naming convention (override)
-
-Layer names are the reliable switch when a `FRAME` is used as a screen (very common) and type alone is ambiguous.
-
-| Layer name pattern | Mode | Example |
-| --- | --- | --- |
-| `page/...` or `[page] ...` (case-insensitive) | page | `page/login`, `[page] Dashboard` |
-| `comp/...`, `component/...`, or `[comp] ...` | component | `comp/primary-button`, `[comp] Card` |
-| no prefix | fall through to type + children | `Button / Primary` |
-
-Parse the prefix, then slug the remainder for the kebab-case filename (`page/login` → `login`, `[comp] Primary Button` → `primary-button`).
-
-### 2. Figma node type
-
-| `type` (from `get_metadata`) | Mode |
-| --- | --- |
-| `CANVAS` (a Figma page) | page |
-| `COMPONENT`, `COMPONENT_SET`, `INSTANCE` | component |
-| `FRAME`, `GROUP`, `SECTION` | ambiguous — use naming, else children heuristic |
-| everything else (`TEXT`, `VECTOR`, `BOOLEAN_OPERATION`, …) | component (single asset) |
-
-### 3. Children heuristic (only if still ambiguous)
-
-Inspect **direct** children in metadata (ignore hidden / non-visual nodes such as `SLICE`):
-
-- **Page:** two or more direct children whose types are `FRAME`, `COMPONENT`, `INSTANCE`, or `GROUP` — a screen made of modules.
-- **Component:** zero or one such child, or children that are only primitives (`TEXT`, `RECTANGLE`, `VECTOR`, …) — one widget.
-
-When in doubt, treat as **component**. The naming prefix is how designers force page mode on a frame.
-
-### What each mode generates
-
-**Component mode** — one file:
-
-- `src/components/generated/primary-button.tsx` → `export function PrimaryButton()`
-
-**Page mode** — split, then compose:
-
-1. Walk direct children from metadata.
-2. Generate one presentational component per child under `src/components/generated/`.
-3. Generate a page wrapper under `src/components/generated/pages/` that only lays those children out (UI-only, Tailwind, no logic). Filename from the page slug: `page/login` → `pages/login.tsx` → `export function LoginPage()`.
-4. Gallery lists the page and each child, with the original Figma URL as caption.
-
-`get_design_context` on a whole `CANVAS` often truncates. In page mode, call `get_design_context` / `get_screenshot` **per child** (and optionally once on the page for overall layout). `download_assets` for any icons those children need.
-
-`parse-url.ts` and `classify.ts` stay in `src/lib/figma/` (no React) so a Vue adapter can reuse them later. Classification input is the MCP metadata payload, not a REST node dump.
-
-## App scaffold
-
-Vite + React + TS + Tailwind v4 (or v3 if v4 setup is noisy). Keep the surface tiny:
+## Output
 
 ```
 figma-automation/
   src/
-    lib/figma/
-      parse-url.ts          # URL → { fileKey, nodeId }
-      classify.ts           # page vs component from MCP metadata
-      types.ts
-    components/generated/   # agent output: components
-      pages/                # agent output: page wrappers
-    assets/figma/           # MCP-downloaded SVGs
-    App.tsx                 # gallery
+    components/generated/
+      <button-slug>.tsx     # kebab-case file, PascalCase export
+    assets/figma/           # MCP-downloaded SVGs only if the button has icons
+    App.tsx                 # gallery: matrix of all variants + Figma URL caption
   .cursor/rules/figma-to-react.mdc
 ```
 
-No `.env`, no Figma token, no `scripts/fetch-figma-node.ts`.
+Naming: layer name from metadata → slug. Example: `Button` → `src/components/generated/button.tsx` → `export function Button()`.
 
-Gallery (`App.tsx`): list generated components with the Figma node URL as a caption. Empty state explains “paste a Figma link in Cursor Agent and ask to generate.” No routing, no auth, no backend.
+**Component contract**
+
+- **UI only:** no `useState`, no click handlers, no data fetching.
+- **Variants as props:** one prop per Figma variant axis (type, size, state, icon, …) with TypeScript unions matching the set. Default props = the component set’s default variant.
+- **Styling:** Tailwind only. No CSS modules. No inline `style=` except where Tailwind cannot express something (gradients/filters).
+- **Icons:** MCP-downloaded SVG sources as-is; do not add icon packs or hand-draw paths.
+- Register the component on `App.tsx`. Show every variant (a labeled grid is enough). Caption with the original Figma URL.
+
+No routing, auth, backend, `pages/` wrappers, or `parse-url` / `classify` for this slice.
 
 ## Agent contract (Cursor rule)
 
-Add `.cursor/rules/figma-to-react.mdc` so every generate request follows the same steps:
+Add a **thin** `.cursor/rules/figma-to-react.mdc` so a generate request for this button follows:
 
-1. Require Figma MCP. If the tools are missing, stop and tell the user to connect `https://mcp.figma.com/mcp`.
-2. Parse the pasted Figma URL with `parse-url` (`fileKey` + `nodeId`).
-3. Call `get_metadata`. Classify with `classify.ts` (name prefix → type → children).
-4. **Component:** `get_design_context` + `get_screenshot` on that node; `download_assets` with SVG for icons.
-5. **Page:** do not generate one mega-file. For each direct child, `get_design_context` + `get_screenshot`, then write child components plus a `pages/` wrapper.
-6. Emit **UI only**: no `useState`, no handlers, no data fetching. Props only if the design has obvious variants (optional for MVP; default is a static component).
-7. Naming: file `src/components/generated/primary-button.tsx`; export `export function PrimaryButton()`. Pages: `src/components/generated/pages/login.tsx` → `export function LoginPage()`. kebab-case file, PascalCase function.
-8. Styling: Tailwind only. No CSS modules, no inline `style=` except where Tailwind cannot express something (gradients/filters) — then keep it minimal.
-9. Register generated files on the gallery page.
-10. Use MCP-downloaded SVG sources as-is; do not add icon packs.
+1. Require Figma MCP. If tools are missing, stop and tell the user to connect `https://mcp.figma.com/mcp`.
+2. Parse `fileKey` + `nodeId` from the pasted URL (`-` → `:` in the node id).
+3. `get_metadata` on that node. If it is not a component / component set / instance, stop and say so — do not fall into page-generation.
+4. `get_design_context` + `get_screenshot`. `download_assets` (SVG) if there are icons. Use `get_context_for_code_connect` if variant axes are unclear.
+5. Write one file under `src/components/generated/`. Map every variant axis to props.
+6. Register it on the gallery as a full variant matrix.
+7. Load `/figma-design-to-code` before `get_design_context`. Treat MCP code as a reference; match this repo (React + Tailwind).
 
-Example prompts the README will document:
+Example prompt:
 
-> Generate a presentational React component from this Figma node: `<url>`
+> Generate a presentational React component from this Figma button, including all variants: `<url>`
 
-> Generate this Figma page as a wrapper plus child components: `<url>`
+## Out of scope for this MVP
 
-## Out of scope for MVP
-
-- Figma REST API, personal access tokens, axios/fetch clients
-- Vue (keep `src/lib/figma` free of React so a Vue adapter can come later)
-- Enforced naming linters / Code Connect
+- Page mode, walking children, `pages/` wrappers
+- `parse-url.ts` / `classify.ts` and designer `page/` vs `comp/` prefixes
+- Vue, Code Connect mappings, naming linters
 - Pixel-perfect visual regression tests
 - Interactive logic, forms, routing, Convex/backend
+- Figma REST API, tokens, axios/fetch clients
+- Generating a second component or a full screen
 
-## Prerequisites you do before coding
+## After this works
 
-1. Connect Figma remote MCP in Cursor (`https://mcp.figma.com/mcp`) and complete OAuth.
-2. Pick demo nodes of both kinds: one `comp/...` (button/card/icon) and one `page/...` (or a Figma `CANVAS`) with at least two child frames.
+1. A second component with variants (e.g. card or input) using the same rule.
+2. Then page mode: classify, split children, compose a wrapper.
 
 ## Implementation order
 
-1. Scaffold Vite React TS + Tailwind in `figma-automation`.
-2. Implement `parse-url` + `classify.ts` (input = MCP metadata shape).
-3. Add the Cursor rule and a short README (MCP setup, example prompts, `page/` vs `comp/` naming, output paths).
-4. Gallery empty state + one hand-written sample component so the page is not blank.
-5. After you approve, generate from both a component URL and a page URL in Agent mode (MCP only) and visually compare to Figma screenshots in the browser.
+1. Cursor rule for the component-only generate path.
+2. In Agent mode, generate the test button from MCP (metadata → design context → screenshot → assets).
+3. Wire the gallery variant matrix.
+4. Compare in the browser to the Figma screenshot. Fix gaps (spacing, type, missing variants, icons) before expanding scope.
