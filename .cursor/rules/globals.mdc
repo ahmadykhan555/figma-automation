@@ -1,0 +1,35 @@
+---
+description: Global TypeScript & React architectural guardrails
+alwaysApply: true
+---
+
+# Global Code Guardrails
+
+## TypeScript Guardrails
+
+- **Strict Typing:** Always supply exact TypeScript types. Never use `any`; use `unknown` with type guards if a type cannot be inferred.
+
+## React Guardrails
+
+- **Component File Boundaries:** Never define multiple React components inside a single file. Export one component per file.
+- **Component Length Limit:** Keep component files under 200 lines of code. Extract sub-components or utility functions if a component grows beyond this limit.
+- **Logic Extraction:** Separate UI from business logic. Move stateful calculations, async operations, or complex handler logic into custom hooks for bloated components. If component is within 200 lines constraint, no custom hook needed
+- **`useEffect` Restrictions:** Do NOT use `useEffect` for state synchronization or computing derived state. Compute values inline during rendering or handle actions inside event handlers.
+- **Naming & Readability:** Use descriptive, self-documenting variable and component names. Writing code should read like plain English without requiring verbose inline comments.
+
+## Tailwind Guardrails:
+
+- **Classnames**: Never use arbitrary values in classnames, for example h-[12px] is BAD, use standard tailwind like `h-12` instead
+- **Conditional Styling:** Never construct Tailwind class names via string concatenation (e.g., `` `bg-${color}-500` ``). Always supply full literal class strings in conditional maps or ternary operators so the Tailwind compiler can pick them up.
+
+## HTML Guardrails:
+
+- **Semantic HTML**: Always write semantic HTML for better SEO.
+- **HTML Hierarchy**: Never nest block elements inside `inline` or `inline-block` elements
+
+## Icon Guardrails:
+
+- Icons are React components that return an `<svg>` template (`src/components/icons/<name>-icon.tsx`).
+- Do not keep raw SVG files under `src/assets/`, and do not render icons via `<img>` or a shared `BaseIcon` wrapper.
+- Use `currentColor` fills so parents control tint through `className` / text color.
+- Pass icons into UI as `ReactNode` slots — never import an icon catalog inside generated components.
