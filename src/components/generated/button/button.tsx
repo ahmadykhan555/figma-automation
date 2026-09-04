@@ -1,3 +1,6 @@
+/**
+ * @generated from Figma node 2787:305
+ */
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cx } from "../../../utils";
 
