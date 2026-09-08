@@ -3,6 +3,16 @@
 @theme {
   --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
 
+  --text-hero: 3.625rem;
+  --text-hero--line-height: 5rem;
+  --text-hero--letter-spacing: 0.0125rem;
+  --text-hero--font-weight: 700;
+
+  --text-hero-body: 1.25rem;
+  --text-hero-body--line-height: 1.875rem;
+  --text-hero-body--letter-spacing: 0.0125rem;
+  --text-hero-body--font-weight: 400;
+
   --text-h3: 1.5rem;
   --text-h3--line-height: 2rem;
   --text-h3--letter-spacing: 0.00625rem;
@@ -28,8 +38,17 @@
   --color-text: #252b42;
   --color-text-muted: #737373;
   --color-danger: #e74040;
+  --color-success: #2dc071;
   --color-surface: #ffffff;
   --color-surface-dark: #252b42;
+  --color-hero-muted: #fafafa;
+  --color-hero-border: #dedede;
+  --spacing-hero: 2.1875rem;
+  --spacing-hero-y: 7rem;
+  --spacing-hero-min: 44.75rem;
+  --spacing-hero-copy: 37.4375rem;
+  --spacing-hero-content: 65.25rem;
+  --spacing-hero-indicator: 3.875rem;
   --shadow-card: 0 13px 19px 0 rgb(0 0 0 / 0.07);
   --radius-card-icon: 0.625rem;
   --spacing-card: 20.5rem;
@@ -43,4 +62,16 @@
   --size-card-icon-float: 4.1875rem;
   --size-card-icon-glyph: 2rem;
   --size-card-icon-glyph-sm: 1.5rem;
+
+  --color-feature-media-muted: #ececec;
+  --spacing-feature-card: 33.125rem;
+  --spacing-feature-card-sm: 14.375rem;
+  --spacing-feature-card-pad: 1.5625rem;
+  --spacing-feature-card-gap: 1.25rem;
+  --spacing-feature-card-copy: 0.3125rem;
+  --size-feature-media: 4.5rem;
+  --size-feature-media-sm: 3.125rem;
+  --size-feature-media-image: 4.375rem;
+  --size-feature-media-image-h: 4.75rem;
+  --radius-feature-media-image: 0.3125rem;
 }
